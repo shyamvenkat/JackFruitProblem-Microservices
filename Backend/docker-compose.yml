@@ -1,0 +1,53 @@
+version: '3.9'
+
+services:
+  auth-service:
+    build:
+      context: ./auth-service
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=development
+    volumes:
+      - ./auth-service:/app
+    restart: always
+
+  email-service:
+    build:
+      context: ./email-service
+    ports:
+      - "5002:5002"
+    volumes:
+      - ./email-service:/app
+    restart: always
+
+  sms-service:
+    build:
+      context: ./sms-service
+    ports:
+      - "5003:5003"
+    environment:
+      - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID}
+      - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN}
+      - TWILIO_PHONE_NUMBER=${TWILIO_PHONE_NUMBER}
+    volumes:
+      - ./sms-service:/app
+    restart: always
+
+  price-service:
+    build:
+      context: ./price-service
+    ports:
+      - "5005:5005"
+    volumes:
+      - ./price-service:/app
+    restart: always
+
+  push-service:
+    build:
+      context: ./push-service
+    ports:
+      - "5004:5004"
+    volumes:
+      - ./push-service:/app
+    restart: always
