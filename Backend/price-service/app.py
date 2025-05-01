@@ -170,6 +170,65 @@ def package_price():
         "pricing_factors": pricing_factors,
     })
 
+#Changes Made: Made it so that, the multiplier is received instead of 'Hard Coding' it.
+
+# Helper: Map month to season
+def get_season(month):
+    if month in [3, 4, 5]:
+        return "spring"
+    elif month in [6, 7, 8]:
+        return "summer"
+    elif month in [9, 10, 11]:
+        return "autumn"
+    else:  # 12, 1, 2
+        return "winter"
+
+@app.route("/package-price-updated", methods=["POST"])
+def package_price():
+    data = request.json
+
+    base_price = data.get("price", 0)
+    destination = data.get("destination", "").lower()
+    date_str = data.get("date", "")
+    package_id = str(data.get("_id", ""))
+
+    # Parse date and determine season
+    try:
+        month = datetime.fromisoformat(date_str).month
+    except:
+        return jsonify({"error": "Invalid date format"}), 400
+
+    season = get_season(month)
+
+    # Get multipliers
+    seasonal_multipliers = {
+        "spring": data.get("spring_multiplier", 0),
+        "summer": data.get("summer_multiplier", 0),
+        "autumn": data.get("autumn_multiplier", 0),
+        "winter": data.get("winter_multiplier", 0)
+    }
+
+    selected_multiplier = seasonal_multipliers.get(season, 0)
+    final_price = round(base_price * (1 + selected_multiplier / 100), 2)
+
+    log_entry = {
+        "package_id": package_id,
+        "destination": destination,
+        "original_price": base_price,
+        "finalPrice": final_price,
+        "season": season,
+        "multiplier_used": selected_multiplier,
+        "timestamp": datetime.now().isoformat()
+    }
+
+    price_collection.insert_one(log_entry)
+
+    return jsonify({
+        "original_price": base_price,
+        "finalPrice": final_price,
+        "season": season,
+        "multiplier_used": selected_multiplier
+    })
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5005, debug=True)
